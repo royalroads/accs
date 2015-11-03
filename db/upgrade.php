@@ -18,10 +18,10 @@
  * upgrade.php, make necessary DB changes
  *
  * Make changes to the database for customizations that
- * are required by the CACE middleware
+ * are required by the ACCS middleware
  *
  * 2012-01-09
- * @package      cace
+ * @package      accs
  * @copyright    2011 Andy Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,29 +30,29 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Hook into upgradelib.php to make any CACE db changes
+ * Hook into upgradelib.php to make any ACCS db changes
  * 
  * @author Andrew Zoltay
  * date    2012-01-09
  * @global object $CFG Moodle configuration object
  * @global object $DB Database object
  * @global type $OUTPUT
- * @param int $oldversion previous CACE plugin version
+ * @param int $oldversion previous ACCS plugin version
  * @return bool true for success, false for failure
  */
-function xmldb_local_cace_upgrade($oldversion) {
+function xmldb_local_accs_upgrade($oldversion) {
     global $CFG, $DB, $OUTPUT;
 
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
     if ($oldversion < 2012010901) {
         // Handle removing of cace_user_fin_lock table for versions prior to 2012010901.
-        $table = new xmldb_table('cace_user_fin_lock');
+        $table = new xmldb_table('accs_user_fin_lock');
         if ($dbman->table_exists($table)) {
             if ($dbman->drop_table($table)) {
-                $OUTPUT->notification('Successfully drop cace_user_fin_lock table');
+                $OUTPUT->notification('Successfully drop accs_user_fin_lock table');
             } else {
-                $OUTPUT->notification('Failed to drop cace_user_fin_lock table!');
+                $OUTPUT->notification('Failed to drop accs_user_fin_lock table!');
                 return false;
             }
         }
@@ -61,7 +61,7 @@ function xmldb_local_cace_upgrade($oldversion) {
     if ($oldversion < 2012050201) {
         // NOTE!!! This is against Moodle development "rules", but is required for performance reasons
         // Add mdl_cace_uvw_moodle_enrolments.
-        $viewsql = 'CREATE OR REPLACE VIEW mdl_cace_uvw_moodle_enrolments 
+        $viewsql = 'CREATE OR REPLACE VIEW mdl_accs_uvw_moodle_enrolments 
                     AS
                     SELECT DISTINCT
                         c.id AS courseid, c.fullname, c.idnumber, 
@@ -79,21 +79,21 @@ function xmldb_local_cace_upgrade($oldversion) {
         try {
             $DB->execute($viewsql);
         } catch (ddl_exception $e) {
-            $OUTPUT->notification('Failed to create mdl_cace_uvw_moodle_enrolments view!');
+            $OUTPUT->notification('Failed to create mdl_accs_uvw_moodle_enrolments view!');
             debugging($e->getMessage());
         }
     }
 
     if ($oldversion < 2012121801) {
-        $sql = 'DROP TABLE IF EXISTS mdl_cace_enrolments';
+        $sql = 'DROP TABLE IF EXISTS mdl_accs_enrolments';
         try {
             $DB->execute($sql);
         } catch (ddl_exception $e) {
-            $OUTPUT->notification('Failed to drop mdl_cace_enrolments table');
+            $OUTPUT->notification('Failed to drop mdl_accs_enrolments table');
             debugging($e->getMessage());
         }
 
-        $sql = 'DROP VIEW IF EXISTS mdl_cace_uvw_moodle_enrolments';
+        $sql = 'DROP VIEW IF EXISTS mdl_accs_uvw_moodle_enrolments';
         try {
             $DB->execute($sql);
         } catch (ddl_exception $e) {
