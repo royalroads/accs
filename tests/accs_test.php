@@ -38,51 +38,51 @@ class local_accs_test extends advanced_testaccs {
     /*
      * Verify that this function returns the development notes of the course.
      */
-    public function test_cace_load_dev_notes_fromfile_nonempty() {
+    public function test_accs_load_dev_notes_fromfile_nonempty() {
         // Retrieve Development Notes page content from file.
-        $pagecontent = cace_load_devnotes_from_file();
+        $pagecontent = accs_load_devnotes_from_file();
         $this->assertNotEmpty($pagecontent);
     }
 
     /*
      * Verify that the newcourses table is empty/ clean.
      */
-    public function test_cace_prep_newcourse() {
-        $result = cace_prep_newcourses_table();
+    public function test_accs_prep_newcourse() {
+        $result = accs_prep_newcourses_table();
         $this->assertEquals(true, $result);
     }
 
     /*
      * Test connection with agresso.
      */
-    public function test_cace_mssql_connect() {
-        $conn = cace_mssql_connect();
+    public function test_accs_mssql_connect() {
+        $conn = accs_mssql_connect();
         $this->assertNotEmpty($conn);
-        cace_mssql_close($conn);
+        accs_mssql_close($conn);
     }
 
     /*
      * Test number of courses added to newcourses table.
      */
-    public function test_cace_load_newcourses() {
-        $conn = cace_mssql_connect();
-        $newcoursecount = cace_load_newcourses_table($conn);
+    public function test_accs_load_newcourses() {
+        $conn = accs_mssql_connect();
+        $newcoursecount = accs_load_newcourses_table($conn);
         $this->assertGreaterThan(0, $newcoursecount);
-        cace_mssql_close($conn);
+        accs_mssql_close($conn);
     }
 
     /*
      * Verify that the system returns a list of courses that does not exist in Moodle.
      */
-    public function test_cace_fetch_courses_to_create() {
-         $newcourses = cace_fetch_courses_to_create();
+    public function test_accs_fetch_courses_to_create() {
+         $newcourses = accs_fetch_courses_to_create();
          $this->assertContainsOnlyInstancesOf($newcourses, array());
     }
 
     /*
-     * Test the preparation of info for creating a new cace course.
+     * Test the preparation of info for creating a new accs course.
      */
-    public function test_cace_prep_newcourse() {
+    public function test_accs_prep_newcourse() {
         global $DB;
 
         $rowdata            = new stdClass ();
@@ -95,15 +95,15 @@ class local_accs_test extends advanced_testaccs {
         $rowdata->department  = 'TOURHOSPMGMT';
         $rowdata->program     = 'TOURHOSPMGMT';
 
-        $newcourse = cace_prep_newcourse($rowdata);
+        $newcourse = accs_prep_newcourse($rowdata);
 
         $this->assertNotEmpty($newcourse);
 
     }
     /*
-     * Test the preparartion of data for a page to a created new cace course.
+     * Test the preparartion of data for a page to a created new accs course.
      */
-    public function test_cace_prep_page_data() {
+    public function test_accs_prep_page_data() {
         global $DB;
 
         // Generate a dummy category for the dummy course.
@@ -112,18 +112,18 @@ class local_accs_test extends advanced_testaccs {
         // Generate a dummy course.
         $createdcourse = $this->getDataGenerator()->create_course(array('name' => 'Dummy Course',
                 'category' => $this->dummycategory->id));
-        $pagecontent = cace_load_devnotes_from_file();
+        $pagecontent = accs_load_devnotes_from_file();
 
-        $data = cace_prep_page_data($createdcourse, 0, $pagecontent);
+        $data = accs_prep_page_data($createdcourse, 0, $pagecontent);
 
         $this->assertNotEmpty($data);
 
     }
 
     /*
-     * Test the addition of a page in a created new cace course.
+     * Test the addition of a page in a created new accs course.
      */
-    public function test_cace_add_page_resource() {
+    public function test_accs_add_page_resource() {
         global $DB;
 
         // Generate a dummy category for the dummy course.
@@ -132,7 +132,7 @@ class local_accs_test extends advanced_testaccs {
         // Generate a dummy course.
         $createdcourse = $this->getDataGenerator()->create_course(array('name' => 'Dummy Course',
                 'category' => $this->dummycategory->id));
-        $pagecontent = cace_load_devnotes_from_file();
+        $pagecontent = accs_load_devnotes_from_file();
 
         // Get Page module info.
         $module = $DB->get_record('modules', array('name' => PAGE_MOD), '*', MUST_EXIST);
@@ -169,7 +169,7 @@ class local_accs_test extends advanced_testaccs {
 
         $data->display          = RESOURCELIB_DISPLAY_OPEN;
 
-        $result = cace_add_page_resource($createdcourse, $data);
+        $result = accs_add_page_resource($createdcourse, $data);
 
         // Returns true if the page has been added.
         $this->assertEquals(true, $result);
@@ -179,7 +179,7 @@ class local_accs_test extends advanced_testaccs {
     /*
      * Test update default course blocks.
      */
-    public function test_cace_update_default_course_blocks() {
+    public function test_accs_update_default_course_blocks() {
         global $DB;
 
         // Generate a dummy category for the dummy course.
@@ -188,7 +188,7 @@ class local_accs_test extends advanced_testaccs {
         // Generate a dummy course.
         $createdcourse = $this->getDataGenerator()->create_course(array('name' => 'Dummy Course',
                 'category' => $this->dummycategory->id));
-        $result = cace_update_default_course_blocks($createdcourse);
+        $result = accs_update_default_course_blocks($createdcourse);
 
         // Returns true if the page has been added.
         $this->assertEquals(true, $result);

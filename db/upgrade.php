@@ -46,7 +46,7 @@ function xmldb_local_accs_upgrade($oldversion) {
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
     if ($oldversion < 2012010901) {
-        // Handle removing of cace_user_fin_lock table for versions prior to 2012010901.
+        // Handle removing of accs_user_fin_lock table for versions prior to 2012010901.
         $table = new xmldb_table('accs_user_fin_lock');
         if ($dbman->table_exists($table)) {
             if ($dbman->drop_table($table)) {
@@ -60,7 +60,7 @@ function xmldb_local_accs_upgrade($oldversion) {
 
     if ($oldversion < 2012050201) {
         // NOTE!!! This is against Moodle development "rules", but is required for performance reasons
-        // Add mdl_cace_uvw_moodle_enrolments.
+        // Add mdl_accs_uvw_moodle_enrolments.
         $viewsql = 'CREATE OR REPLACE VIEW mdl_accs_uvw_moodle_enrolments 
                     AS
                     SELECT DISTINCT
@@ -97,7 +97,7 @@ function xmldb_local_accs_upgrade($oldversion) {
         try {
             $DB->execute($sql);
         } catch (ddl_exception $e) {
-            $OUTPUT->notification('Failed to drop mdl_cace_uvw_moodle_enrolments view');
+            $OUTPUT->notification('Failed to drop mdl_accs_uvw_moodle_enrolments view');
             debugging($e->getMessage());
         }
     }

@@ -16,14 +16,14 @@
 
 
 /**
- * mssql.php, MS SQL Server functions for CACE plug-in
+ * mssql.php, MS SQL Server functions for ACCS plug-in
  *
- * Course Auto-Create and Enrol MS SQL Server functions
+ * Auto-Create Course Shell and MS SQL Server functions
  * for such things as managing database connections
  *
  * 2010-04-28
  * @package      plug-in
- * @subpackage   RRU_CACE
+ * @subpackage   RRU_ACCS
  * @copyright    2010 Andrew Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,8 +32,8 @@
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 defined('MOODLE_INTERNAL') || die();
 
-require_once("cacelib.php");
-require_once("cace_config.php");
+require_once("accslib.php");
+require_once("accs_config.php");
 
 // This script is only available from within the Moodle environment.
 defined('MOODLE_INTERNAL') || die();
@@ -43,19 +43,19 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @author Andrew Zoltay
  * date    2010-04-28
- * @global $CACE_CFG configuration settings for CACE
+ * @global $ACCS_CFG configuration settings for ACCS
  * @return MS SQL Link identifier or false
  */
-function cace_mssql_connect() {
-    global $CACE_CFG;
+function accs_mssql_connect() {
+    global $ACCS_CFG;
 
-    cace_write_to_log('Connecting to ' . $CACE_CFG->mssqlserver);
+    accs_write_to_log('Connecting to ' . $ACCS_CFG->mssqlserver);
 
-    $mssqllink = mssql_connect($CACE_CFG->mssqlserver, $CACE_CFG->mssqluser, $CACE_CFG->mssqlpwd) or die('Unable to connect to MS SQL Server');
-    if (mssql_select_db ($CACE_CFG->mssqldb, $mssqllink)) {
+    $mssqllink = mssql_connect($ACCS_CFG->mssqlserver, $ACCS_CFG->mssqluser, $ACCS_CFG->mssqlpwd) or die('Unable to connect to MS SQL Server');
+    if (mssql_select_db ($ACCS_CFG->mssqldb, $mssqllink)) {
         return $mssqllink;
     } else {
-        cace_write_to_log('ERROR - failed to select ' . $CACE_CFG->mssqldb . ' database');
+        accs_write_to_log('ERROR - failed to select ' . $ACCS_CFG->mssqldb . ' database');
         return false;
     }
 }
@@ -68,9 +68,9 @@ function cace_mssql_connect() {
  * @param MS SQL Link identifier $conn to be closed
  * @return none
  */
-function cace_mssql_close(&$conn) {
+function accs_mssql_close(&$conn) {
     if (!mssql_close($conn)) {
-        cace_write_to_log('Failed to close MS SQL Server connection');
+        accs_write_to_log('Failed to close MS SQL Server connection');
     }
 }
 ?>

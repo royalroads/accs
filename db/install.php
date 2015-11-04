@@ -21,7 +21,7 @@
  * are required by the ACCS middleware
  *
  * 2011-06-01
- * @package      cace
+ * @package      accs
  * @copyright    2011 Andy Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,11 +30,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Hook into upgradelib.php to install any CACE db requirements
+ * Hook into upgradelib.php to install any ACCS db requirements
  */
 function xmldb_local_accs_install() {
     global $DB;
 
-    // Initialize the CACE last update run timestamp.
+    // Initialize the ACCS last update run timestamp.
     set_config('autoupdate_last_run', time(), 'local_accs');
 }

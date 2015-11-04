@@ -17,28 +17,28 @@ define('CLI_SCRIPT', true); // Set up to be run from command line
 
 
 /**
- * run_cace-updatecourses.php, called by CRON to do CACE work
+ * run_accs-updatecourses.php, called by CRON to do ACCS work
  *
  * Purpose: Auto-update course shells based on external data
  * Steps:
  *   1. Clean up mdl_newcourses by deleting any rows in the table
  *   2. Pull new course information from Student Information System (Agresso)
- *   3. Save new course data in mdl_cace_newcourses table
+ *   3. Save new course data in mdl_accs_newcourses table
  *   4. Rename any "shared" courses (a course that is shared by multiple programs) so only a single course is updated
- *   5. Use a query between mdl_cace_newcourses and mdl_course and mdl_config_plugins to
+ *   5. Use a query between mdl_accs_newcourses and mdl_course and mdl_config_plugins to
  *      identify all courses that need to be updated
  *   6. Loop through courses to be updated and update them
  *   7. Send notification email listing which courses were updated and which courses failed and why
  *
  * 2011-06-01
  * @package      plug-in
- * @subpackage   cace
+ * @subpackage   accs
  * @copyright    2011 Andrew Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once("cacelib.php");
+require_once("accslib.php");
 
-cace_update_courses();
+accs_update_courses();
 ?>
 

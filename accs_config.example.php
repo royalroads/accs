@@ -33,23 +33,23 @@
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-unset($CACE_CFG);
+unset($ACCS_CFG);
 
 // Agresso_RR connection info
-$CACE_CFG = new stdClass();
-$CACE_CFG->mssqlserver = '<server>:<port>';
-$CACE_CFG->mssqldb = '<database>';
-$CACE_CFG->mssqluser = '<user>';
-$CACE_CFG->mssqlpwd = '<password>';
+$ACCS_CFG = new stdClass();
+$ACCS_CFG->mssqlserver = '<server>:<port>';
+$ACCS_CFG->mssqldb = '<database>';
+$ACCS_CFG->mssqluser = '<user>';
+$ACCS_CFG->mssqlpwd = '<password>';
 
 // Miscellaneous ACCS configuration settings
-$CACE_CFG->emailto = 'administrator@your-school.edu';
-$CACE_CFG->defaultcatid = 5;
-$CACE_CFG->log = '/var/web/moodledata/logs/accs.log';
-$CACE_CFG->monthsahead = 9;         // The number of months into the future to look for new/updated courses
-$CACE_CFG->res_name = 'Development Notes';
-$CACE_CFG->res_intro = 'Development Notes Introduction';
-$CACE_CFG->default_courses = '3';   // List of Moodle course ids in which all students are to be enrolled
-$CACE_CFG->admin_user = 2;
+$ACCS_CFG->emailto = 'administrator@your-school.edu';
+$ACCS_CFG->defaultcatid = 5;
+$ACCS_CFG->log = '/var/web/moodledata/logs/accs.log';
+$ACCS_CFG->monthsahead = 9;         // The number of months into the future to look for new/updated courses
+$ACCS_CFG->res_name = 'Development Notes';
+$ACCS_CFG->res_intro = 'Development Notes Introduction';
+$ACCS_CFG->default_courses = '3';   // List of Moodle course ids in which all students are to be enrolled
+$ACCS_CFG->admin_user = 2;
 
 ?>

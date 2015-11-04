@@ -16,14 +16,14 @@
 
 
 /**
- * database.php, Manage database functions for CACE plug-in
+ * database.php, Manage database functions for ACCS plug-in
  *
- * Course Auto-Create and Enrol database functions
+ * Auto-Create Course Shell database functions
  * for such things as fetching and inserting database records
  *
  * 2010-04-28
  * @package      plug-in
- * @subpackage   RRU_CACE
+ * @subpackage   RRU_ACCS
  * @copyright    2011 Andrew Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,7 +32,7 @@ require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . "/dmllib.php");
-require_once("cacelib.php");
+require_once("accslib.php");
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -43,24 +43,24 @@ define("LOCK_ACCOUNT", 'nologin');  // In mdl_user, the auth value for "No login
  *
  * @author Andrew Zoltay
  * date    2010-04-28
- * @global object $CACE_CFG CACE configuration object
+ * @global object $ACCS_CFG ACCS configuration object
  * @param link_identifier $agrconn for SIS db
  * @return mixed_array MS SQL result resource of courses or -1 for error
  */
-function cace_fetch_sis_newcourses($agrconn) {
-    global $CACE_CFG;
+function accs_fetch_sis_newcourses($agrconn) {
+    global $ACCS_CFG;
 
     if ($agrconn) {
-        // Make call to db - using $CACE_CFG->monthsahead to determine how far into the future to look for new courses.
-        $query = "EXEC Learn.usp_GetNewCourses @intMonthsBeforeStart = $CACE_CFG->monthsahead, @blnIsLatestVersion = 1;";
+        // Make call to db - using $ACCS_CFG->monthsahead to determine how far into the future to look for new courses.
+        $query = "EXEC Learn.usp_GetNewCourses @intMonthsBeforeStart = $ACCS_CFG->monthsahead, @blnIsLatestVersion = 1;";
         $result = mssql_query($query, $agrconn);
         if (!$result) {
-            cace_write_to_log("ERROR calling Learn.usp_GetNewCourses: " . mssql_get_last_message());
+            accs_write_to_log("ERROR calling Learn.usp_GetNewCourses: " . mssql_get_last_message());
         }
 
         return $result;
     } else {
-        cace_write_to_log("ERROR - Connection creation failed");
+        accs_write_to_log("ERROR - Connection creation failed");
         return false;
     }
 }
@@ -73,10 +73,10 @@ function cace_fetch_sis_newcourses($agrconn) {
  * @param link_identifier $agrconn for SIS db
  * @return int number of courses added to newcourses table or false for error
  */
-function cace_load_newcourses_table($agrconn) {
+function accs_load_newcourses_table($agrconn) {
     $coursesfetched = 0;
     $coursesadded = 0;
-    $result = cace_fetch_sis_newcourses($agrconn);
+    $result = accs_fetch_sis_newcourses($agrconn);
 
     if ($result) {
         $newcourse = array();
@@ -94,21 +94,21 @@ function cace_load_newcourses_table($agrconn) {
             $newcourse['intUnixLastUpdate'] = $row['intUnixLastUpdate'];
 
             // Add course.
-            if (cace_save_newcourse($newcourse)) {
+            if (accs_save_newcourse($newcourse)) {
                 $coursesadded++;
             } else {
-                cace_write_to_log("Database error - could not insert " . $newcourse['strIDNumber'] . " into cace_newcourses table");
+                accs_write_to_log("Database error - could not insert " . $newcourse['strIDNumber'] . " into accs_newcourses table");
             }
         }
 
         // Handle shared courses (one course shared by multiple departments)
         // "There can be only one!" - Highlander, 1986.
-        cace_handle_shared_courses();
+        accs_handle_shared_courses();
 
         // Compare courses fetched with those added and store result in log.
-        cace_write_to_log("Added $coursesadded courses to mdl_cace_newcourses");
+        accs_write_to_log("Added $coursesadded courses to mdl_accs_newcourses");
     } else {
-        // An error occurred in cace_fetch_sis_newcourses().
+        // An error occurred in accs_fetch_sis_newcourses().
         $coursesadded = false;
     }
 
@@ -116,21 +116,21 @@ function cace_load_newcourses_table($agrconn) {
 }
 
 /**
- * Empty the mdl_cace_newcourses table in preparation for new load
+ * Empty the mdl_accs_newcourses table in preparation for new load
  *
  * @author Andrew Zoltay
  * date    2010-02-11
  * @global object $DB Moodle database object
  * @return boolean success if all rows are deleted from table else failure
  */
-function cace_prep_newcourses_table() {
+function accs_prep_newcourses_table() {
     global $DB;
 
-    // Delete all the rows from the mdl_cace_newcourses table.
-    if ($DB->delete_records('cace_newcourses')) {
+    // Delete all the rows from the mdl_accs_newcourses table.
+    if ($DB->delete_records('accs_newcourses')) {
         return true;
     } else {
-        cace_write_to_log("ERROR - Failed to clear mdl_cace_newcourses table prior to load");
+        accs_write_to_log("ERROR - Failed to clear mdl_accs_newcourses table prior to load");
         return false;
     }
 }
@@ -144,7 +144,7 @@ function cace_prep_newcourses_table() {
  * @param associative array $newcourse for a course
  * @return boolean true if successfully inserted, otherwise false
  */
-function cace_save_newcourse($newcourse) {
+function accs_save_newcourse($newcourse) {
     global $DB;
 
     $ncrecord = new stdClass();
@@ -158,10 +158,10 @@ function cace_save_newcourse($newcourse) {
     $ncrecord->program = $newcourse['chrProgram'];
     $ncrecord->lastupdated = $newcourse['intUnixLastUpdate'];
 
-    if ($DB->insert_record('cace_newcourses', $ncrecord)) {
+    if ($DB->insert_record('accs_newcourses', $ncrecord)) {
         return true;
     } else {
-        cace_write_to_log("ERROR - Failed to insert $ncrecord->idnumber into mdl_cace_newcourses table");
+        accs_write_to_log("ERROR - Failed to insert $ncrecord->idnumber into mdl_accs_newcourses table");
         return false;
     }
 }
@@ -175,14 +175,14 @@ function cace_save_newcourse($newcourse) {
  * @return mixed_array of course info required to create new courses
  *         or false if db error occurs
  */
-function cace_fetch_courses_to_create() {
+function accs_fetch_courses_to_create() {
     global $DB;
 
     try {
         $sql = "SELECT DISTINCT
                     nc.agrcourseoffpk, nc.idnumber, nc.fullname, nc.shortname, nc.startdate,
                     nc.programtype, department, program
-                FROM {cace_newcourses} nc
+                FROM {accs_newcourses} nc
                 WHERE NOT EXISTS (SELECT 1 FROM {course}
                                     WHERE nc.idnumber = idnumber)";
 
@@ -190,7 +190,7 @@ function cace_fetch_courses_to_create() {
         return $coursedata;
 
     } catch (dml_exception $e) {
-        cace_write_to_log("ERROR - Failed to retrieve list of courses to create");
+        accs_write_to_log("ERROR - Failed to retrieve list of courses to create");
         return false;
     }
 }
@@ -205,7 +205,7 @@ function cace_fetch_courses_to_create() {
  * @return mixed_array of course info required to update existing courses
  *         or false if db error occurs
  */
-function cace_fetch_courses_to_update($lastrun) {
+function accs_fetch_courses_to_update($lastrun) {
     global $DB;
 
     try {
@@ -213,7 +213,7 @@ function cace_fetch_courses_to_update($lastrun) {
         $sql = "SELECT DISTINCT
                     c.id,
                     nc.agrcourseoffpk, nc.idnumber, nc.fullname, nc.shortname, nc.startdate
-                FROM {cace_newcourses} nc
+                FROM {accs_newcourses} nc
                 INNER JOIN {course} c ON (nc.idnumber = c.idnumber)
                 WHERE nc.lastupdated > $lastrun";
 
@@ -221,7 +221,7 @@ function cace_fetch_courses_to_update($lastrun) {
         return $coursedata;
 
     } catch (dml_exception $e) {
-        cace_write_to_log("ERROR - Failed to retrieve list of courses to update");
+        accs_write_to_log("ERROR - Failed to retrieve list of courses to update");
         return false;
     }
 }
@@ -238,7 +238,7 @@ function cace_fetch_courses_to_update($lastrun) {
  * @param string $topcategory - name of top level category
  * @return int Course Category ID
  */
-function cace_fetch_course_category($categoryname, $topcategory) {
+function accs_fetch_course_category($categoryname, $topcategory) {
     global $DB;
 
     try {
@@ -252,7 +252,7 @@ function cace_fetch_course_category($categoryname, $topcategory) {
             return false;
         }
     } catch (dml_exception $e) {
-        cace_write_to_log("ERROR - Failed to retrieve category from mdl_course_categories");
+        accs_write_to_log("ERROR - Failed to retrieve category from mdl_course_categories");
         return false;
     }
 }
@@ -267,14 +267,14 @@ function cace_fetch_course_category($categoryname, $topcategory) {
  * @param object $course course info
  * @return boolean true for success, false for failure
  */
-function cace_dbupdate_course ($course) {
+function accs_dbupdate_course ($course) {
     global $DB;
 
     try {
         $result = $DB->update_record('course', $course);
         return $result;
     } catch (dml_exception $e) {
-        cace_write_to_log("ERROR - Failed to update course id: '$course->id'");
+        accs_write_to_log("ERROR - Failed to update course id: '$course->id'");
         return false;
     }
 }
@@ -288,13 +288,13 @@ function cace_dbupdate_course ($course) {
  * @param object $gradecatrecord
  * @return id of the record inserted or boolean false if there was a problem
  */
-function cace_insert_gradecategory_rec($gradecatrecord) {
+function accs_insert_gradecategory_rec($gradecatrecord) {
    global $DB;
    try {
        $idgradecat = $DB->insert_record('grade_categories', $gradecatrecord);
        return $idgradecat;
    } catch (Exception $e) {
-      cace_write_to_log("ERROR - Failed to insert $gradecatrecord->courseid into mdl_grade_categories table");
+      accs_write_to_log("ERROR - Failed to insert $gradecatrecord->courseid into mdl_grade_categories table");
       return false;
   }
 }
@@ -307,14 +307,14 @@ function cace_insert_gradecategory_rec($gradecatrecord) {
  * @global object $DB Moodle database object
  * @param int $gradecatrecordid
  */
-function cace_update_gradecategory_rec($gradecatrecordid) {
+function accs_update_gradecategory_rec($gradecatrecordid) {
     global $DB;
     // Update the path field for the grade category record that was created.
     try {
         $path = '/'. $gradecatrecordid . '/';
         $DB->set_field('grade_categories', 'path', $path , array('id' => $gradecatrecordid));
     } catch (Exception $e) {
-        cace_write_to_log("ERROR - failed to update the path for id: $gradecatrecordid in the mdl_grade_categories table");
+        accs_write_to_log("ERROR - failed to update the path for id: $gradecatrecordid in the mdl_grade_categories table");
     }
 }
 
@@ -326,26 +326,26 @@ function cace_update_gradecategory_rec($gradecatrecordid) {
  * @global object $DB Moodle database object
  * @param object $gradeitemrecord to be inserted
  */
-function cace_insert_gradeitem_rec($gradeitemrecord) {
+function accs_insert_gradeitem_rec($gradeitemrecord) {
     global $DB;
     try {
         $idgradeitem = $DB->insert_record('grade_items', $gradeitemrecord);
     } catch (Exception $e) {
-        cace_write_to_log("ERROR - failed to insert $gradeitemrecord->courseid in the mdl_grade_items table");
+        accs_write_to_log("ERROR - failed to insert $gradeitemrecord->courseid in the mdl_grade_items table");
     }
 }
 
 /**
  * Shared courses are courses that have students from more than one program enroled in them.
  * Because the Program name is part of the course title in Moodle, the course is essentially
- * duplicated in mdl_cace_newcourses when data is exported from Agresso.
+ * duplicated in mdl_accs_newcourses when data is exported from Agresso.
  * So, we make the title include the department instead of the program so a single course shell is created.
  *
  * @author Andrew Zoltay
  * date    2011-06-14
  * @global object $DB Moodle database object
  */
-function cace_handle_shared_courses() {
+function accs_handle_shared_courses() {
     global $DB;
 
     // First identify the all the shared courses.
@@ -353,8 +353,8 @@ function cace_handle_shared_courses() {
         $sql = "SELECT
                     id, agrcourseoffpk, idnumber, fullname, shortname,
                     department, program
-                    FROM {cace_newcourses}
-                    WHERE agrcourseoffpk IN (SELECT agrcourseoffpk FROM {cace_newcourses}
+                    FROM {accs_newcourses}
+                    WHERE agrcourseoffpk IN (SELECT agrcourseoffpk FROM {accs_newcourses}
                                             GROUP BY idnumber
                                             HAVING Count(department) > 1)
                     ORDER BY agrcourseoffpk;";
@@ -362,7 +362,7 @@ function cace_handle_shared_courses() {
         $sharedcourses = $DB->get_records_sql($sql);
 
     } catch (Exception $e) {
-        cace_write_to_log("ERROR - Failed to retrieve list of shared courses from mdl_cace_newcourses");
+        accs_write_to_log("ERROR - Failed to retrieve list of shared courses from mdl_accs_newcourses");
     }
 
     $sharedcoursecount = 0;
@@ -380,7 +380,7 @@ function cace_handle_shared_courses() {
             // Bundle up the parameters for the execute statement.
             $params = array($fullname, $shortname, $sharedcourse->department, $sharedcourse->department, $sharedcourse->agrcourseoffpk);
 
-            $updatesql = "UPDATE {cace_newcourses}
+            $updatesql = "UPDATE {accs_newcourses}
                           SET fullname = ?,
                           shortname = ?,
                           department = ?,
@@ -388,10 +388,10 @@ function cace_handle_shared_courses() {
                           WHERE agrcourseoffpk = ?";
             try {
                 $DB->execute($updatesql, $params);
-                cace_write_to_log("Updated shared course $sharedcourse->idnumber's title to '$fullname'");
+                accs_write_to_log("Updated shared course $sharedcourse->idnumber's title to '$fullname'");
                 $sharedcoursecount++;
             } catch (Exception $e) {
-                cace_write_to_log("ERROR - Failed to update shared course $sharedcourse->idnumber");
+                accs_write_to_log("ERROR - Failed to update shared course $sharedcourse->idnumber");
                 $failedcount;
             }
 
@@ -399,6 +399,6 @@ function cace_handle_shared_courses() {
 
         }
     }
-    cace_write_to_log("$sharedcoursecount 'shared' courses were updated and $failedcount 'shared' courses failed to be updated");
+    accs_write_to_log("$sharedcoursecount 'shared' courses were updated and $failedcount 'shared' courses failed to be updated");
 
 }

@@ -17,26 +17,26 @@ define('CLI_SCRIPT', true); // Set up to be run from command line
 
 
 /**
- * run_cace_createcourses.php, called by CRON to do CACE work
+ * run_accs_createcourses.php, called by CRON to do ACCS work
  *
  * Purpose: Auto-create course shells based on external data
  * Steps:
- *   1. Clean up mdl_cace_newcourses by deleting any rows in the table
+ *   1. Clean up mdl_accs_newcourses by deleting any rows in the table
  *   2. Pull new course information from Student Information System (Agresso)
- *   3. Save new course data in mdl_cace_newcourses table
+ *   3. Save new course data in mdl_accs_newcourses table
  *   4. Rename any "shared" courses (a course that is shared by multiple programs) so only a single course is imported
- *   5. Use a query between mdl_cace_newcourses and mdl_course to identify all courses that need to be created
+ *   5. Use a query between mdl_accs_newcourses and mdl_course to identify all courses that need to be created
  *   6. Loop through courses to be created and create them through Moodle function
  *   7. Send notification email listing which courses were created and which courses failed and why
  *
  * 2011-04-28
  * @package      plug-in
- * @subpackage   cace
+ * @subpackage   accs
  * @copyright    2011 Andrew Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once("cacelib.php");
+require_once("accslib.php");
 
-cace_import_course_shells();
+accs_import_course_shells();
 ?>

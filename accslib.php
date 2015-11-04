@@ -15,14 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * cacelib.php, Library of CACE functions
+ * accslib.php, Library of ACCS functions
  *
- * Course Auto-Create and Enrol function library contains
- * code to create/update courses and enrol/unenrol students
+ * Auto-Create Course Shells function library contains
+ * code to create/update courses
  *
  * 2010-05-03
  * @package      plug-in
- * @subpackage   RRU_CACE
+ * @subpackage   RRU_ACCS
  * @copyright    2011 Andrew Zoltay, Royal Roads University
  * @license      http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -34,7 +34,7 @@ require_once($CFG->dirroot . "/course/lib.php");
 require_once($CFG->dirroot . "/enrol/locallib.php");
 require_once($CFG->libdir . "/moodlelib.php");
 require_once($CFG->libdir . "/resourcelib.php");
-require_once("cace_config.php");
+require_once("accs_config.php");
 require_once("database.php");
 require_once("mssql.php");
 
@@ -43,7 +43,7 @@ if (!defined('RRU_CRLF')) {
 }
 define('PAGE_MOD', 'page');
 
-$cace_email_messages = array();
+$accs_email_messages = array();
 
 /*******************************************************************************/
 /*            A U T O - C R E A T E / U P D A T E  C O U R S E S               */
@@ -58,16 +58,16 @@ $cace_email_messages = array();
  * @param string $pagecontent contents of page resource
  * @return int id of new course or failure of course creation
  */
-function cace_create_newcourse($newcourse, $pagecontent) {
+function accs_create_newcourse($newcourse, $pagecontent) {
     global $DB, $USER;
     // Need to force a user so the system can log who is doing the action.
     $USER = $DB->get_record ( 'user', array ('username' => 'mdladmin'));
     // Prep the course info.
-    $course = cace_prep_newcourse($newcourse);
+    $course = accs_prep_newcourse($newcourse);
 
     // Verify $course was prepared correctly.
     if (!$course) {
-        cace_write_to_log("ERROR - Moodle cace_prep_newcourse() failed for $newcourse->idnumber");
+        accs_write_to_log("ERROR - Moodle accs_prep_newcourse() failed for $newcourse->idnumber");
         return false;
     }
 
@@ -77,24 +77,24 @@ function cace_create_newcourse($newcourse, $pagecontent) {
 
         // If course shell was created, add "Development Notes" resource to new shell
         // First prep the data - default section to the first one in the course (0).
-        $data = cace_prep_page_data($createdcourse, 0, $pagecontent);
+        $data = accs_prep_page_data($createdcourse, 0, $pagecontent);
 
-        if (!cace_add_page_resource($createdcourse, $data)) {
+        if (!accs_add_page_resource($createdcourse, $data)) {
             // Just report the error - don't stop execution.
-            cace_write_to_log("ERROR - Failed to add $data->name for course $newcourse->idnumber");
+            accs_write_to_log("ERROR - Failed to add $data->name for course $newcourse->idnumber");
         }
 
         // Add default blocks to the right column.
-        cace_update_default_course_blocks($createdcourse);
+        accs_update_default_course_blocks($createdcourse);
         
         // Add a record in the grade categories table and also in the grade items table to support letter grade and percentages
         // in the course totals column.
-        cace_add_grade_records($createdcourse->id);
+        accs_add_grade_records($createdcourse->id);
 
         return $createdcourse->id;
 
     } catch (moodle_exception $e) {
-        cace_write_to_log("ERROR - Moodle create_course() failed for $newcourse->idnumber " . $e->getMessage());
+        accs_write_to_log("ERROR - Moodle create_course() failed for $newcourse->idnumber " . $e->getMessage());
         return false;
     }
 
@@ -109,11 +109,11 @@ function cace_create_newcourse($newcourse, $pagecontent) {
  * @param update course object $course
  * @return true for success, false for failure
  */
-function cace_update_course($course) {
+function accs_update_course($course) {
 
     $course->timemodified = time();
 
-    if (cace_dbupdate_course($course)) {
+    if (accs_dbupdate_course($course)) {
         // Do some logging.
         add_to_log($course->id, "course", "update", "edit.php?id=$course->id", $course->id);
 
@@ -131,36 +131,36 @@ function cace_update_course($course) {
  *
  * @author Andrew Zoltay
  * date    2010-05-03
- * @global $CACE_CFG - configuration settings for CACE
+ * @global $ACCS_CFG - configuration settings for ACCS
  * @param associative array $course used to prepare new course
  * @return object course data object or false if fails
  */
-function cace_prep_newcourse($course) {
-    global  $CACE_CFG;
+function accs_prep_newcourse($course) {
+    global  $ACCS_CFG;
 
     $newcourse = new stdClass();
 
     // Check some fields before we create the new course shell.
     if (empty($course->fullname)) {
-        cace_write_to_log("ERROR - Course fullname is required");
+        accs_write_to_log("ERROR - Course fullname is required");
         return false;
     }
     if (empty($course->shortname)) {
-        cace_write_to_log("ERROR - Course shortname is required");
+        accs_write_to_log("ERROR - Course shortname is required");
         return false;
     }
     if (empty($course->idnumber)) {
-        cace_write_to_log("ERROR - Course idnumber is required");
+        accs_write_to_log("ERROR - Course idnumber is required");
         return false;
     }
 
-    if (empty($CACE_CFG->defaultcatid)) {
-        cace_write_to_log('ERROR - $CACE_CFG->defaultcatid is not set in the config.php. Please define a course category ID');
+    if (empty($ACCS_CFG->defaultcatid)) {
+        accs_write_to_log('ERROR - $ACCS_CFG->defaultcatid is not set in the config.php. Please define a course category ID');
         return false;
     }
 
     // Fill in properties that are required for the new course shell.
-    $newcourse->category = cace_get_course_category($course);
+    $newcourse->category = accs_get_course_category($course);
     $newcourse->fullname = $course->fullname;
     $newcourse->shortname = $course->shortname;
     $newcourse->idnumber = $course->idnumber;
@@ -219,14 +219,14 @@ function cace_prep_newcourse($course) {
  *
  * @author Andrew Zoltay
  * date    2011-04-27
- * @global $CACE_CFG - configuration settings for CACE
+ * @global $ACCS_CFG - configuration settings for ACCS
  * @global object $DB Moodle database object
  * @param object $course
  * @param int $sectionid
  * @param string $content page content
  */
-function cace_prep_page_data($course, $section, $content) {
-    global $CACE_CFG, $DB;
+function accs_prep_page_data($course, $section, $content) {
+    global $ACCS_CFG, $DB;
 
     // Get resource module configuration items.
     $config = get_config('resource');
@@ -249,8 +249,8 @@ function cace_prep_page_data($course, $section, $content) {
     $data->type             = 'course';     // Default to 'course'.
     $data->revision         = 1;            // first revision.
 
-    $data->name             = $CACE_CFG->res_name;  // Page resource name.
-    $data->intro            = $CACE_CFG->res_intro; // Page resource Description.
+    $data->name             = $ACCS_CFG->res_name;  // Page resource name.
+    $data->intro            = $ACCS_CFG->res_intro; // Page resource Description.
     $data->introformat      = 1;            // Default to HTML format.
 
     $data->page['text']     = $content;     // Page resource content - the meat.
@@ -275,14 +275,14 @@ function cace_prep_page_data($course, $section, $content) {
  *
  * @author Andrew Zoltay
  * date    2011-04-27
- * @global $CFG - configuration settings for CACE
+ * @global $CFG - configuration settings for Moodle
  * @global object $DB Moodle database object
- * @global $CACE_CFG - configuration settings for CACE
+ * @global $ACCS_CFG - configuration settings for ACCS
  * @param int $courseid
  * @param object $pagedata
  */
-function cace_add_page_resource($course, $pagedata) {
-    global $CFG, $DB, $CACE_CFG, $USER;
+function accs_add_page_resource($course, $pagedata) {
+    global $CFG, $DB, $ACCS_CFG, $USER;
     require_once("$CFG->dirroot/mod/page/lib.php");
 
     try {
@@ -324,7 +324,7 @@ function cace_add_page_resource($course, $pagedata) {
         $eventdata->name           = $pagedata->name;
         $eventdata->id             = $pagedata->coursemodule;
         $eventdata->courseid       = $course->id;
-        $eventdata->userid         = $CACE_CFG->admin_user;    // Use Admin account for event data.
+        $eventdata->userid         = $ACCS_CFG->admin_user;    // Use Admin account for event data.
         $event = \core\event\course_module_created::create_from_cm($eventdata);
         $event->trigger();
 
@@ -341,7 +341,7 @@ function cace_add_page_resource($course, $pagedata) {
  * date    2011-05-25
  * @return returns the content of dev_notes.txt or false for failure
  */
-function cace_load_devnotes_from_file() {
+function accs_load_devnotes_from_file() {
     // Retrieve Development Notes page content from file.
     $pagecontent = file_get_contents('dev_notes.txt', true);
 
@@ -356,7 +356,7 @@ function cace_load_devnotes_from_file() {
  * @global object $DB Moodle database object
  * @param object $course a course object.
  */
-function cace_update_default_course_blocks($course) {
+function accs_update_default_course_blocks($course) {
     global $DB;
 
     // Get context info of the course.
@@ -368,7 +368,7 @@ function cace_update_default_course_blocks($course) {
             $DB->execute($sql, array($context->id));
             return true;
     } catch (Exception $e) {
-            cace_write_to_log("ERROR - Failed to update default course blocks contextid: $context->id. The courseid is: $course->id");
+            accs_write_to_log("ERROR - Failed to update default course blocks contextid: $context->id. The courseid is: $course->id");
     }
 }
 
@@ -377,38 +377,38 @@ function cace_update_default_course_blocks($course) {
  *
  * @author Andrew Zoltay
  * date    2011-05-24
- * @global $CACE_CFG - configuration settings for CACE
- * @global $cace_email_messages - array to store error messages to be accessed later
+ * @global $ACCS_CFG - configuration settings for ACCS
+ * @global $accs_email_messages - array to store error messages to be accessed later
  * @param object $course
  * @return int destination category id for the course
  */
-function cace_get_course_category($course) {
-    global $CACE_CFG, $cace_email_messages;
+function accs_get_course_category($course) {
+    global $ACCS_CFG, $accs_email_messages;
 
     // Use values from Agresso to determine correct course category for the course.
     // Try the Program name.
     if (!isset($coursecategory)) {
-        $coursecategory = cace_fetch_course_category($course->program, $course->programtype);
+        $coursecategory = accs_fetch_course_category($course->program, $course->programtype);
 
         if (!$coursecategory) {
             // Add a message to the log that the program could not be found.
             $errmsg = "WARNING - could not locate the program category '$course->program' (Top category: "  .
                     "$course->programtype) for course $course->idnumber.";
-            cace_write_to_log($errmsg);
+            accs_write_to_log($errmsg);
             // Add message to global email messages.
-            $cace_email_messages[] = $errmsg;
+            $accs_email_messages[] = $errmsg;
         }
     }
 
     // Use default if not set by this point.
     if (!isset($coursecategory) or !$coursecategory) {
-        $coursecategory = $CACE_CFG->defaultcatid;
+        $coursecategory = $ACCS_CFG->defaultcatid;
         // Add a message to the log that the no categories could be found.
         $errmsg = "WARNING - could not locate any categories for course '$course->idnumber'" .
                 ". The course will be created in default category specified in configuration file.";
-        cace_write_to_log($errmsg);
+        accs_write_to_log($errmsg);
         // Add message to global email messages.
-        $cace_email_messages[] = $errmsg;
+        $accs_email_messages[] = $errmsg;
     }
 
     return $coursecategory;
@@ -419,21 +419,21 @@ function cace_get_course_category($course) {
  * Steps:
  *   1. Clean up mdl_newcourses by deleting any rows in the table
  *   2. Pull new course information from Student Information System (Agresso)
- *   3. Save new course data in mdl_cace_newcourses table
- *   4. Use a query between mdl_cace_newcourses and mdl_course to
+ *   3. Save new course data in mdl_accs_newcourses table
+ *   4. Use a query between mdl_accs_newcourses and mdl_course to
  *      identify all courses that need to be created
  *   5. Loop through courses to be created and create them through the Moodle course createfunction
  *   6. Send notification email listing which courses were created and which courses failed and why
  *
  * @author Andrew Zoltay
  * date    2010-05-03
- * @global $CACE_CFG - configuration settings for CACE
+ * @global $ACCS_CFG - configuration settings for ACCS
  * @global $CFG - Moodle configuration settings
- * @global $cace_email_messages - array to store error messages to be accessed later
+ * @global $accs_email_messages - array to store error messages to be accessed later
  * @return none
  */
-function cace_import_course_shells() {
-    global $CACE_CFG, $CFG, $cace_email_messages;
+function accs_import_course_shells() {
+    global $ACCS_CFG, $CFG, $accs_email_messages;
 
     $coursescreatedcount = 0;
     $coursesfailedcount = 0;
@@ -441,92 +441,92 @@ function cace_import_course_shells() {
     $coursesnotcreated = "";
     $errormsg = null;
 
-    cace_write_to_log("-------------------------------------------------------------------");
-    cace_write_to_log("Beginning Auto-create course shell process");
-    cace_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("Beginning Auto-create course shell process");
+    accs_write_to_log("-------------------------------------------------------------------");
 
     // Get page resource content from file.
-    $pageresourcecontent = cace_load_devnotes_from_file();
+    $pageresourcecontent = accs_load_devnotes_from_file();
     if (!$pageresourcecontent) {
-        cace_write_to_log("ERROR - failed to load Development Notes content from dev_notes.txt file");
+        accs_write_to_log("ERROR - failed to load Development Notes content from dev_notes.txt file");
         // Set a default value.
         $pageresourcecontent = '<p></p><p>ID TR<br />ELT <br />Program office;</p>';
     }
 
     // Clean up newcourses table in preparation for new batch of courses.
-    if (cace_prep_newcourses_table()) {
+    if (accs_prep_newcourses_table()) {
         // Connect to SIS.
-        $conn = cace_mssql_connect();
+        $conn = accs_mssql_connect();
 
         // Save new courses to Moodle table.
-        $newcoursecount = cace_load_newcourses_table($conn);
+        $newcoursecount = accs_load_newcourses_table($conn);
 
         // Close connection to SIS.
-        cace_mssql_close($conn);
+        accs_mssql_close($conn);
 
         // Either no new courses or db connection failure.
         if ($newcoursecount > 0) {
             // Loop through new courses and create the course shell.
-            cace_write_to_log("$newcoursecount courses that start in the next $CACE_CFG->monthsahead months were found in Agresso");
+            accs_write_to_log("$newcoursecount courses that start in the next $ACCS_CFG->monthsahead months were found in Agresso");
 
             // Get the new courses that we're going to create.
-            $newcourses = cace_fetch_courses_to_create();
+            $newcourses = accs_fetch_courses_to_create();
 
             if (!$newcourses) {
-                cace_write_to_log("No new courses to create");
+                accs_write_to_log("No new courses to create");
             } else {
                 // Found some new courses to create.
                 foreach ($newcourses as $newcourse) {
                     // Create new course.
-                    $newcourseid = cace_create_newcourse($newcourse, $pageresourcecontent);
+                    $newcourseid = accs_create_newcourse($newcourse, $pageresourcecontent);
                     if ($newcourseid > 0) {
                         $coursescreatedcount++;
-                        cace_write_to_log("Created new course: $newcourse->fullname (ID: $newcourseid)");
+                        accs_write_to_log("Created new course: $newcourse->fullname (ID: $newcourseid)");
 
                         // Build successfully created courses list.
                         $coursescreated = $coursescreated . "<li> - $newcourse->fullname : <a href=" . '"' .
                                 $CFG->wwwroot.'/course/view.php?id='.$newcourseid . '">' . "$CFG->wwwroot/course/view.php?id=$newcourseid</a></li>" . RRU_CRLF;
                     } else {
                         $coursesfailedcount++;
-                        cace_write_to_log("ERROR - Failed to create new course shell for '$newcourse->fullname' AGR PK = $newcourse->agrcourseoffpk");
+                        accs_write_to_log("ERROR - Failed to create new course shell for '$newcourse->fullname' AGR PK = $newcourse->agrcourseoffpk");
 
                         // Build successfully created courses list.
                         $coursesnotcreated = $coursesnotcreated . " - Agresso ID = $newcourse->agrcourseoffpk - $newcourse->fullname" . RRU_CRLF;
                     }
                     // Check for any warnings created during the creation process.
-                    if (count($cace_email_messages) > 0) {
-                        for ($i = 0; $i < count($cace_email_messages); $i++) {
-                            $coursescreated = $coursescreated . $cace_email_messages[$i] . RRU_CRLF;
+                    if (count($accs_email_messages) > 0) {
+                        for ($i = 0; $i < count($accs_email_messages); $i++) {
+                            $coursescreated = $coursescreated . $accs_email_messages[$i] . RRU_CRLF;
                         }
                         // Clear the global messages array.
-                        $cace_email_messages = array();
+                        $accs_email_messages = array();
                     }
                 }
             }
-            cace_write_to_log("$coursescreatedcount new course shells were created. $coursesfailedcount course shells failed to be created");
+            accs_write_to_log("$coursescreatedcount new course shells were created. $coursesfailedcount course shells failed to be created");
         } else {
-            // Error occurred in cace_load_newcourses_table().
-            $errormsg = "ERROR - an error occurred while loading new courses - please check cace.log on server." . RRU_CRLF;
+            // Error occurred in accs_load_newcourses_table().
+            $errormsg = "ERROR - an error occurred while loading new courses - please check accs.log on server." . RRU_CRLF;
         }
 
         /* Send notification of job completion */
 
         // Define ficticious sender email address.
-        $sender = 'cace@royalroads.ca';
+        $sender = 'accs@royalroads.ca';
 
         // Get recipient user object.
-        $recipient = $CACE_CFG->emailto;
+        $recipient = $ACCS_CFG->emailto;
 
         // Report error.
         if (empty($recipient)) {
-            cace_write_to_log("$CACE_CFG->emailto was not set in config.php");
+            accs_write_to_log("$ACCS_CFG->emailto was not set in config.php");
         }
 
-        $subject = 'CACE Auto-created courses - ' . date('Y-m-d');
+        $subject = 'ACCS Auto-created courses - ' . date('Y-m-d');
         $message =
                    '<html>' . RRU_CRLF .
                    '<body>' . RRU_CRLF .
-                   '<h1>CACE Auto-create course report for ' . date('Y-m-d H:i:s') . '</h1><br>' . RRU_CRLF .
+                   '<h1>accs Auto-create course report for ' . date('Y-m-d H:i:s') . '</h1><br>' . RRU_CRLF .
                    '<div>' . RRU_CRLF .
                    $errormsg .
                    '</div>' . RRU_CRLF .
@@ -544,15 +544,15 @@ function cace_import_course_shells() {
                    '</html>';
 
         // Send the message.
-        if (cace_send_mail($recipient, $sender, $subject, $message)) {
-            cace_write_to_log("Sent email to $recipient");
+        if (accs_send_mail($recipient, $sender, $subject, $message)) {
+            accs_write_to_log("Sent email to $recipient");
         } else {
-            cace_write_to_log("ERROR - failed to send email to $CACE_CFG->emailto");
+            accs_write_to_log("ERROR - failed to send email to $ACCS_CFG->emailto");
         }
     }
 
-    cace_write_to_log("Script complete");
-    cace_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("Script complete");
+    accs_write_to_log("-------------------------------------------------------------------");
 }
 
 
@@ -561,20 +561,20 @@ function cace_import_course_shells() {
  * Steps:
  *   1. Clean up mdl_newcourses by deleting any rows in the table
  *   2. Pull new course information from Student Information System (Agresso)
- *   3. Save new course data in mdl_cace_newcourses table
- *   4. Use a query between mdl_cace_newcourses and mdl_course and mdl_config_plugins to
+ *   3. Save new course data in mdl_accs_newcourses table
+ *   4. Use a query between mdl_accs_newcourses and mdl_course and mdl_config_plugins to
  *      identify all courses that need to be updated
  *   5. Loop through courses to be updated and update them
  *   6. Send notification email listing which courses were updated and which courses failed and why
  *
  * @author Andrew Zoltay
  * date    2010-06-01
- * @global $CACE_CFG - configuration settings for CACE
- * @global $cace_email_messages - array to store error messages to be accessed later
+ * @global $ACCS_CFG - configuration settings for ACCS
+ * @global $accs_email_messages - array to store error messages to be accessed later
  * @return none
  */
-function cace_update_courses() {
-    global $CACE_CFG;
+function accs_update_courses() {
+    global $ACCS_CFG;
 
     // Initialize some variables for use in email.
     $coursesupdatedcount = 0;
@@ -583,43 +583,43 @@ function cace_update_courses() {
     $coursesnotupdated = "";
     $errormsg = null;
 
-    cace_write_to_log("-------------------------------------------------------------------");
-    cace_write_to_log("Beginning Auto-update course shell process");
-    cace_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("Beginning Auto-update course shell process");
+    accs_write_to_log("-------------------------------------------------------------------");
 
     // Clean up newcourses table in preparation for new batch of courses.
-    if (cace_prep_newcourses_table()) {
+    if (accs_prep_newcourses_table()) {
         // Connect to SIS.
-        $conn = cace_mssql_connect();
+        $conn = accs_mssql_connect();
 
         // Pull fresh data from SIS.
-        $newcoursecount = cace_load_newcourses_table($conn);
+        $newcoursecount = accs_load_newcourses_table($conn);
 
         // Close connection to SIS.
-        cace_mssql_close($conn);
+        accs_mssql_close($conn);
 
         // Either no new courses or db connection failure.
         if ($newcoursecount > 0) {
             // Loop through new courses and create the course shell.
 
             // Get the last update run from config_plugins.
-            $lastruntime = get_config('local_cace', 'autoupdate_last_run');
+            $lastruntime = get_config('local_accs', 'autoupdate_last_run');
 
             // Get the new courses that we're going to create.
-            $updatecourses = cace_fetch_courses_to_update($lastruntime);
+            $updatecourses = accs_fetch_courses_to_update($lastruntime);
 
             if (!$updatecourses) {
-                cace_write_to_log("No courses require updates");
+                accs_write_to_log("No courses require updates");
             } else {
-                cace_write_to_log(count($updatecourses)
-                . " courses that start in the next $CACE_CFG->monthsahead months were found in Agresso that require updates");
+                accs_write_to_log(count($updatecourses)
+                . " courses that start in the next $ACCS_CFG->monthsahead months were found in Agresso that require updates");
 
                 // Found some new courses to create.
                 foreach ($updatecourses as $updatecourse) {
                     $message = '';
 
                     // Update the course.
-                    if (cace_update_course($updatecourse)) {
+                    if (accs_update_course($updatecourse)) {
                         $coursesupdatedcount++;
                         $message = 'Successfully updated course: ' . $updatecourse->fullname
                                     . ' (ID: ' . $updatecourse->id . ')';
@@ -630,31 +630,31 @@ function cace_update_courses() {
                                     . ' (ID: ' . $updatecourse->id . ')';
                         $coursesnotupdated = $coursesnotupdated . '- ' . $message . RRU_CRLF;
                     }
-                    cace_write_to_log($message);
+                    accs_write_to_log($message);
                 }
             }
 
             // If success - update config_plugins -.
             // Autoupdate_last_run value to current date/time in prepartion for next run.
-            set_config('autoupdate_last_run', time(), 'local_cace');
+            set_config('autoupdate_last_run', time(), 'local_accs');
         } else if (!$newcoursecount) {
-            // Error occurred in cace_load_newcourses_table().
-            $errormsg = "ERROR - an error occurred while loading updated courses - please check cace.log on server." . RRU_CRLF . RRU_CRLF;
+            // Error occurred in accs_load_newcourses_table().
+            $errormsg = "ERROR - an error occurred while loading updated courses - please check accs.log on server." . RRU_CRLF . RRU_CRLF;
         }
 
         /* Send notification of job completion */
 
         // Define ficticious sender email address.
-        $sender = 'cace@royalroads.ca';
+        $sender = 'accs@royalroads.ca';
 
         // Get recipient user object.
-        $recipient = $CACE_CFG->emailto;
+        $recipient = $ACCS_CFG->emailto;
 
         // Report error.
         if (empty($recipient)) {
-            cace_write_to_log("$CACE_CFG->emailto was not set in config.php");
+            accs_write_to_log("$ACCS_CFG->emailto was not set in config.php");
         }
-        $subject = 'CACE Auto-update courses - ' . date('Y-m-d');
+        $subject = 'ACCS Auto-update courses - ' . date('Y-m-d');
         $emailmessage = 'Auto-update course report for ' . date('Y-m-d H:i:s') . RRU_CRLF . RRU_CRLF .
                    $errormsg .
                    $coursesupdatedcount . ' new course shells were updated:' . RRU_CRLF .
@@ -663,15 +663,15 @@ function cace_update_courses() {
                    $coursesnotupdated . RRU_CRLF . RRU_CRLF;
 
         // Send the message.
-        if (cace_send_mail($recipient, $sender, $subject, $emailmessage)) {
-            cace_write_to_log("Sent email to $recipient");
+        if (accs_send_mail($recipient, $sender, $subject, $emailmessage)) {
+            accs_write_to_log("Sent email to $recipient");
         } else {
-            cace_write_to_log("ERROR - failed to send email to $CACE_CFG->emailto");
+            accs_write_to_log("ERROR - failed to send email to $ACCS_CFG->emailto");
         }
     }
 
-    cace_write_to_log("Auto-Update course shells script complete");
-    cace_write_to_log("-------------------------------------------------------------------");
+    accs_write_to_log("Auto-Update course shells script complete");
+    accs_write_to_log("-------------------------------------------------------------------");
 
 }
 
@@ -685,23 +685,23 @@ function cace_update_courses() {
  * @param int $courseid
  * @param boolean true if success else false
  */
-function cace_add_grade_records ($courseid) {
+function accs_add_grade_records ($courseid) {
     // Prepare data to create a record in the grade categories table.
-    $gradecatrecord = cace_prepared_gradecategory_rec($courseid);
+    $gradecatrecord = accs_prepared_gradecategory_rec($courseid);
 
     // Insert a record in the grade categories table.
-    $gradecatrecordid = cace_insert_gradecategory_rec($gradecatrecord);
+    $gradecatrecordid = accs_insert_gradecategory_rec($gradecatrecord);
 
     if ($gradecatrecordid > 0 ) {
         // Update the path field for the grade category record that was created.
-        cace_update_gradecategory_rec($gradecatrecordid);
+        accs_update_gradecategory_rec($gradecatrecordid);
         // Prepare data to create a record in the grade items table.
-        $gradeitemrecord = cace_prepared_gradeitem_rec($courseid, $gradecatrecordid);
+        $gradeitemrecord = accs_prepared_gradeitem_rec($courseid, $gradecatrecordid);
         // Insert a record in the grade items table.
-        cace_insert_gradeitem_rec($gradeitemrecord);
+        accs_insert_gradeitem_rec($gradeitemrecord);
         return true;
     } else {
-        cace_write_to_log("ERROR - Failed to insert $newgradecat->courseid into mdl_grade_categories table");
+        accs_write_to_log("ERROR - Failed to insert $newgradecat->courseid into mdl_grade_categories table");
         return false;
     }
 }
@@ -715,7 +715,7 @@ function cace_add_grade_records ($courseid) {
  * @return object $newgradecate
  */
 
-function cace_prepared_gradecategory_rec($courseid) {
+function accs_prepared_gradecategory_rec($courseid) {
     global $CFG;
     $newgradecat = new stdClass();
     $newgradecat->courseid            = $courseid;
@@ -739,7 +739,7 @@ function cace_prepared_gradecategory_rec($courseid) {
  * @param int $gradecatrecordid
  * @return object $newgradeitem
  */
-function cace_prepared_gradeitem_rec($courseid, $gradecatrecordid) {
+function accs_prepared_gradeitem_rec($courseid, $gradecatrecordid) {
     global $CFG;
     $newgradeitem = new stdClass();
     $newgradeitem->courseid            = $courseid;
@@ -766,7 +766,7 @@ function cace_prepared_gradeitem_rec($courseid, $gradecatrecordid) {
  * @param string $body body of the email
  * @return boolean success if email was sent or false otherwise
  */
-function cace_send_mail($to, $from, $subject, $body) {
+function accs_send_mail($to, $from, $subject, $body) {
     $headers  = 'MIME-Version: 1.0' . "\r\n";
     $headers .= 'Content-Type: text/html; charset=iso-8859-1' . "\r\n";
     $headers .= 'From: ' . $from . "\r\n" .
@@ -777,31 +777,31 @@ function cace_send_mail($to, $from, $subject, $body) {
     if ($status === true) {
         $sent = true;
     } else {
-        cace_write_to_log("ERROR - cace_send_mail: failed to send email notification");
+        accs_write_to_log("ERROR - accs_send_mail: failed to send email notification");
     }
     return $sent;
 }
 
 
 /**
- * Purpose: Write a message to the CACE log
+ * Purpose: Write a message to the ACCS log
  *          - uses php error_log function even though $message
  *            may not be an error
  *
  * @author Andrew Zoltay
  * date    2010-05-03
- * @global $CACE_CFG - configuration settings for CACE
+ * @global $ACCS_CFG - configuration settings for ACCS
  * @param string $message entry to be written to log
  * @return boolean success if written to log or false otherwise
  */
-function cace_write_to_log($message) {
-    global  $CACE_CFG;
+function accs_write_to_log($message) {
+    global  $ACCS_CFG;
 
     // Verify destination is set.
-    if ($CACE_CFG->log) {
-        $destfile = $CACE_CFG->log;
+    if ($ACCS_CFG->log) {
+        $destfile = $ACCS_CFG->log;
     } else {
-        $destfile = $CFG->dirroot . '\cace.log';
+        $destfile = $CFG->dirroot . '\accs.log';
     }
 
     $entry = date('Y-m-d H:i:s') . ' - ' . $message . RRU_CRLF;
