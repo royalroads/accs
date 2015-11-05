@@ -110,9 +110,6 @@ function xmldb_local_accs_upgrade($oldversion) {
         // Launch rename table for quiz_question_instances.
         $dbman->rename_table($table, 'accs_newcourses');
 
-    }
-    
-    if ($oldversion < 2015100701) {
         // Rename name of the plugin from cace to accs
         $sql = "UPDATE mdl_config_plugins
                 SET plugin = 'local_accs' 
@@ -123,9 +120,7 @@ function xmldb_local_accs_upgrade($oldversion) {
             $OUTPUT->notification('Failed to rename name of the plugin from cace to accs and name is version');
             debugging($e->getMessage());
         }
-    }
-    
-    if ($oldversion < 2015100702) {
+
         // Rename name of the plugin from cace to accs
         $sql = "UPDATE mdl_config_plugins
                 SET plugin = 'local_accs'
