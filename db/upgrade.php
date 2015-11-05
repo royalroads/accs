@@ -102,35 +102,26 @@ function xmldb_local_accs_upgrade($oldversion) {
         }
     }
     
-    // Rename CACE to ACCS
-    if ($oldversion < 2015100700) {
+    // Rename cace_newcourses to accs_newcourses.
+    // Remove the references of local_cace from config_plugins
+    if ($oldversion < 2015110503) {
         // Define table cace_newcourses to be renamed to accs_newcourses.
-        $table = new xmldb_table('cace_newcourses ');
+        $table = new xmldb_table('cace_newcourses');
 
         // Launch rename table for quiz_question_instances.
         $dbman->rename_table($table, 'accs_newcourses');
-
-        // Rename name of the plugin from cace to accs
-        $sql = "UPDATE mdl_config_plugins
-                SET plugin = 'local_accs' 
-                WHERE plugin = 'local_cace' and name = 'version' ";
+        //Record that qtype_match savepoint was reached.
+        upgrade_plugin_savepoint(true, 2015110503, 'local', 'accs');
+        
+        // Remove records that are related to local_cace
+        
         try {
-            $DB->execute($sql);
+            $DB->delete_records('config_plugins', array('plugin' => 'local_cace'));
         } catch (ddl_exception $e) {
             $OUTPUT->notification('Failed to rename name of the plugin from cace to accs and name is version');
             debugging($e->getMessage());
         }
-
-        // Rename name of the plugin from cace to accs
-        $sql = "UPDATE mdl_config_plugins
-                SET plugin = 'local_accs'
-                WHERE plugin = 'local_cace' and name = 'autoupdate_last_cron' ";
-        try {
-            $DB->execute($sql);
-        } catch (ddl_exception $e) {
-            $OUTPUT->notification('Failed to rename name of the plugin from cace to accs and name is autoupdate_last_cron.');
-            debugging($e->getMessage());
-        }
     }
+
     return true;
 }
