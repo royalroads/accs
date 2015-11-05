@@ -101,6 +101,41 @@ function xmldb_local_accs_upgrade($oldversion) {
             debugging($e->getMessage());
         }
     }
+    
+    // Rename CACE to ACCS
+    if ($oldversion < 2015100700) {
+        // Define table cace_newcourses to be renamed to accs_newcourses.
+        $table = new xmldb_table('cace_newcourses ');
 
+        // Launch rename table for quiz_question_instances.
+        $dbman->rename_table($table, 'accs_newcourses');
+
+    }
+    
+    if ($oldversion < 2015100701) {
+        // Rename name of the plugin from cace to accs
+        $sql = "UPDATE mdl_config_plugins
+                SET plugin = 'local_accs' 
+                WHERE plugin = 'local_cace' and name = 'version' ";
+        try {
+            $DB->execute($sql);
+        } catch (ddl_exception $e) {
+            $OUTPUT->notification('Failed to rename name of the plugin from cace to accs and name is version');
+            debugging($e->getMessage());
+        }
+    }
+    
+    if ($oldversion < 2015100702) {
+        // Rename name of the plugin from cace to accs
+        $sql = "UPDATE mdl_config_plugins
+                SET plugin = 'local_accs'
+                WHERE plugin = 'local_cace' and name = 'autoupdate_last_cron' ";
+        try {
+            $DB->execute($sql);
+        } catch (ddl_exception $e) {
+            $OUTPUT->notification('Failed to rename name of the plugin from cace to accs and name is autoupdate_last_cron.');
+            debugging($e->getMessage());
+        }
+    }
     return true;
 }
