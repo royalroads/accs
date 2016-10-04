@@ -86,7 +86,7 @@ function accs_create_newcourse($newcourse, $pagecontent) {
 
         // Add default blocks to the right column.
         accs_update_default_course_blocks($createdcourse);
-        
+
         // Add a record in the grade categories table and also in the grade items table to support letter grade and percentages
         // in the course totals column.
         accs_add_grade_records($createdcourse->id);
@@ -114,12 +114,10 @@ function accs_update_course($course) {
     $course->timemodified = time();
 
     if (accs_dbupdate_course($course)) {
-        // Do some logging.
-        add_to_log($course->id, "course", "update", "edit.php?id=$course->id", $course->id);
-
         // Trigger events.
-        events_trigger('course_updated', $course);
-
+        $context = context_course::instance($course->id);
+        $event = \core\event\course_updated::create(array('context'=>$context, 'objectid'=> $course->id, 'other'=>null));
+        $event->trigger();
         return true;
     } else {
         return false;
@@ -178,7 +176,7 @@ function accs_prep_newcourse($course) {
     $newcourse->maxbytes = get_config('moodlecourse', 'maxbytes');
     $newcourse->metacourse = 0; // AZ - use default.
     $newcourse->summaryformat = FORMAT_HTML; // Change the Course summary text box editor format.
-    
+
     // Enrolments
     $newcourse->enrol = ''; // Cr: has no default in DB.
     $newcourse->defaultrole = 0; // AZ - use default.
@@ -676,7 +674,7 @@ function accs_update_courses() {
 }
 
 /**
- * Purpose: add 2 records to the grade_items table and grade_categories table. The reason is to display 
+ * Purpose: add 2 records to the grade_items table and grade_categories table. The reason is to display
  * letter grades and percentage as the course totals
  *
  * @author Carlos Chiarella
@@ -707,7 +705,7 @@ function accs_add_grade_records ($courseid) {
 }
 /**
  * Purpose: prepared a record to be inserted in the grade categories table
- * 
+ *
  * @author Carlos Chiarella
  * date    2015-04-07
  * @global $CFG - configuration settings
@@ -731,7 +729,7 @@ function accs_prepared_gradecategory_rec($courseid) {
 
 /**
  * Purpose: prepared a record to be inserted in the grade items table
- * 
+ *
  * @author Carlos Chiarella
  * date    2015-04-07
  * @global $CFG - configuration settings

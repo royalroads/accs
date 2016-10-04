@@ -28,3 +28,4 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'ACCS';
+$string['eventlog_accs_course_updated'] = 'ACCS updated course';
